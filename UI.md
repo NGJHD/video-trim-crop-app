@@ -253,11 +253,14 @@ doesn't break the display-space model.
 
 ### 3.2 Trim
 
-`[ Reset trim ]` selects the whole clip again. It disables itself when the
-selection already spans the full length, so the control tells you whether it
-would do anything. It sits in the rail rather than the timeline because it is
-the same kind of thing as `Reset crop` — an escape hatch from a direct
-manipulation, not part of the manipulation itself.
+`[ Reset trim ]` selects the whole clip again. It sits in the rail rather than
+the timeline because it is the same kind of thing as `Reset crop` — an escape
+hatch from a direct manipulation, not part of the manipulation itself.
+
+**Both reset buttons disable themselves when there is nothing to undo** —
+`Reset crop` when the rectangle is already the whole frame, `Reset trim` when
+the selection already spans the full length. A reset that can't change anything
+shouldn't look like it could.
 
 | Gesture | Result |
 | --- | --- |
@@ -313,11 +316,23 @@ Everything above is display space. No rotation math anywhere in the UI.
 | Right-click | Menu: set trim start / end at that frame |
 
 Click and drag start identically, so they are told apart by distance: a press
-becomes a drag only once the pointer has travelled **5 px**. Below that it stays
+becomes a drag only once the pointer has travelled **8 px**. Below that it stays
 a click and only moves the playhead, which keeps a slightly shaky click from
 wiping out a selection. A drag is direction-agnostic — right-to-left selects the
 same span as left-to-right — and ends with the playhead on the new trim start,
 ready to review what was just selected.
+
+**The playhead has its own handle:** a small white square sitting just above the
+strip, joined to the playhead line by a short stem so it reads as the head of
+that line rather than a floating chip. The gap stays between the *box* and the
+filmstrip; the line crosses it.
+
+- Dragging the handle **scrubs and only scrubs** — it never edits the trim. That
+  is why scrubbing didn't have to fight drag-to-select for the track: each
+  gesture got its own target.
+- Right-clicking it opens the same trim menu, but anchored to the **playhead
+  position** rather than the cursor, so *Set trim start here* means "at the frame
+  I'm looking at".
 - **Right-click the filmstrip** for *Set trim start here* / *Set trim end here*,
   acting on the frame under the cursor. Faster than dragging a handle the length
   of a long clip. The menu shows the timecode it will use, and the option that

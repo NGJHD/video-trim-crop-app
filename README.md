@@ -37,6 +37,8 @@ overwrites: a second render becomes `_trimmed_1`, `_trimmed_2`, and so on.
 | Click filmstrip | Move the playhead |
 | Drag across filmstrip | Select a trim range |
 | Right-click filmstrip | Set trim start / end at that frame |
+| Drag the white handle | Scrub the playhead |
+| Right-click the handle | Set trim start / end at the playhead |
 | `Ctrl+O` | Open a file |
 | `Ctrl+Enter` | Process |
 | `Esc` | Cancel the running job |
@@ -132,7 +134,7 @@ Skips the footage checks gracefully if no samples are present.
 
 ```bash
 npm run pack   # unpacked directory, for testing
-npm run dist   # portable exe + zip in release/
+npm run dist   # zip in release/
 ```
 
 **There is no installer.** `npm run dist` produces a single artifact:
