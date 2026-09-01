@@ -1,0 +1,30 @@
+{
+  "name": "video-trim-crop",
+  "version": "1.0.0",
+  "description": "Trim and crop a single video file. Self-contained Windows desktop app.",
+  "main": "./out/main/index.js",
+  "author": "darrenng87",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist": "electron-vite build && electron-builder",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "electron": "^44.1.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.2.7"
+  }
+}

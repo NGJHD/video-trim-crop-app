@@ -1,0 +1,14 @@
+node_modules/
+out/
+release/
+dist/
+
+# Bundled FFmpeg binaries (~440 MB). Fetch or copy them into resources/bin/
+# before building — see README. GPL build; see CLAUDE.md §10.
+resources/bin/*.exe
+
+# Personal release notes, not part of the repo.
+RELEASE_GUIDE.md
+
+# Local test footage for `npm run verify`.
+samples/

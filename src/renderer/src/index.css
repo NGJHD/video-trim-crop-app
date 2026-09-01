@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-neutral-950: #171717;
+  --color-neutral-900: #1f1f1f;
+  --color-neutral-800: #2f2f2f;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #171717;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #e5e5e5;
+  /* Tabular numerals everywhere, so timecodes and dimensions don't jitter. */
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  cursor: default;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }

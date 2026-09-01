@@ -1,0 +1,30 @@
+appId: com.darrenng.videotrimcrop
+productName: Video Trim & Crop
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: resources/bin
+    to: bin
+    filter:
+      - '**/*'
+  # Also shipped loose so the BrowserWindow can point at it at runtime; the
+  # exe's own embedded icon (win.icon below) covers Explorer and the taskbar.
+  - from: build/icon.ico
+    to: icon.ico
+# Files inside an asar archive cannot be executed, and this only breaks after
+# packaging — so the FFmpeg binaries are kept out of it.
+asarUnpack:
+  - resources/bin/**
+win:
+  icon: build/icon.ico
+  # Zip only: no installer, no self-extracting portable exe. The user unzips the
+  # folder anywhere and double-clicks. Nothing touches the registry, nothing
+  # needs admin, nothing is left behind. Do not add other targets without asking.
+  target:
+    - target: zip
+      arch: [x64]
+  artifactName: ${productName}-${version}-${arch}.${ext}
