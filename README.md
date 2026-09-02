@@ -8,7 +8,11 @@ Design rationale lives in [CLAUDE.md](CLAUDE.md); the UI is specified in
 
 ---
 
-## Using it
+# Using it
+
+<img width="1346" height="853" alt="Screenshot 2026-09-02 100030" src="https://github.com/user-attachments/assets/1fb16f2d-9bda-4f2a-9630-b0849d848ae9" />
+
+<img width="1346" height="853" alt="Screenshot 2026-09-02 095858" src="https://github.com/user-attachments/assets/b5e3ebc4-df5b-477a-bd7b-53899285fe68" />
 
 1. Drop a video onto the window (or `Ctrl+O`, or pass a path on the command
    line — Windows "Open with" works).
@@ -64,7 +68,7 @@ overwrites: a second render becomes `_trimmed_1`, `_trimmed_2`, and so on.
 
 ---
 
-## Development
+# For Developers
 
 ```bash
 npm install
