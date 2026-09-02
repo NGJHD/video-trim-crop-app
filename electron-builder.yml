@@ -33,4 +33,7 @@ win:
   target:
     - target: zip
       arch: [x64]
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  # NOT ${productName}: the spaces and ampersand in "Video Trim & Crop" are
+  # sanitised to dots by GitHub on upload, so the download button would show a
+  # different name than the release notes. A plain name avoids that.
+  artifactName: VideoTrimCrop-${version}-${arch}.${ext}

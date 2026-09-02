@@ -156,7 +156,7 @@ npm run dist   # zip in release/
 **There is no installer.** `npm run dist` produces a single artifact:
 
 ```
-release/Video Trim & Crop-<version>-x64.zip     ~300 MB
+release/VideoTrimCrop-<version>-x64.zip     ~250 MB
 ```
 
 Unzip anywhere, double-click `Video Trim & Crop.exe` inside. Nothing is
