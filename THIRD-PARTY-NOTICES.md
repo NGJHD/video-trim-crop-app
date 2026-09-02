@@ -1,6 +1,8 @@
 # Third-party notices
 
-Video Trim & Crop's own source code is MIT licensed (see `LICENSE`).
+Video Trim & Crop's own source code is MIT licensed (see `LICENSE`). That
+licence file is the plain MIT text and covers **this project's source only** —
+it does not cover the bundled FFmpeg described below.
 
 The **distributed application** additionally bundles FFmpeg, which is under the
 GNU General Public License. That is a different licence with real obligations,
