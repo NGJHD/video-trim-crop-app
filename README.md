@@ -59,6 +59,8 @@ overwrites: a second render becomes `_trimmed_1`, `_trimmed_2`, and so on.
 - **Quality** is High by default (`crf 17`, `preset slow` — visually
   transparent). Medium and Low trade quality for a smaller file.
 - Output is H.264 / AAC in MP4 with `+faststart`.
+- **It remembers the folder** your last video came from and opens the file
+  dialog there. If that folder has since gone, it falls back to your Desktop.
 
 ---
 
@@ -128,7 +130,7 @@ script after replacing `icon.png`.
 npm run verify
 ```
 
-55 checks covering crop geometry, letterbox mapping, rotation, quality presets,
+69 checks covering crop geometry, letterbox mapping, rotation, quality presets,
 filter-chain construction and FFmpeg argument building — then, against real
 footage, which it looks for in `./samples`, then `$VTC_SAMPLES`, then a
 directory passed as an argument:
@@ -178,15 +180,17 @@ the built exe and rendering a real clip.
 src/
   shared/      ipc.js       channel names + payload shapes, imported by both sides
                filters.js   FFmpeg filter chains and argument arrays
+               folder.js    where the open dialog starts
   main/        index.js     app lifecycle, window, IPC handlers
                binaries.js  bundled binary resolution + startup assertion
                probe.js     ffprobe -> MediaInfo (the ONLY place raw w/h is read)
                media.js     proxy, filmstrip, render
                jobs.js      child process registry, progress parsing, cancellation
                temp.js      temp lifecycle, output path selection
+               settings.js  the one persisted value: last used folder
   preload/     index.js     the entire window.api surface
   renderer/    src/App.jsx, store.js, components/, lib/
-scripts/       verify.mjs        55 checks, incl. real-footage rotation tests
+scripts/       verify.mjs        69 checks, incl. real-footage rotation tests
                make-icon.mjs     build/icon.png -> multi-size build/icon.ico
                fetch-ffmpeg.mjs  downloads + validates the bundled binaries
 build/         icon.png, icon.ico

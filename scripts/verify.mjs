@@ -19,8 +19,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-import { buildRenderArgs, buildRenderFilters, buildThumbFilters, rotateFilter } from '../src/shared/filters.js';
+import { buildRenderArgs, buildRenderFilters, buildFilmstripFilters, buildFilmstripArgs, rotateFilter } from '../src/shared/filters.js';
 import { QUALITY } from '../src/shared/ipc.js';
+import { pickStartFolder } from '../src/shared/folder.js';
 import {
   normalizeCrop, fitRatio, renderedVideoRect, toSource, toScreen,
   fullFrameCrop, viewSize, ratioFor, MIN_CROP,
@@ -158,10 +159,18 @@ console.log('\nFilter chains');
   check('full-frame HDR still tone-maps',
     buildRenderFilters({ crop: null, isHDR: true }).startsWith('zscale'));
 
-  check('SDR thumbnails skip the tone-map',
-    buildThumbFilters({ isHDR: false, height: 64 }) === 'scale=-2:64');
+  const strip = buildFilmstripFilters({ isHDR: false, height: 64, step: 3.6 });
+  check('the filmstrip selects frames instead of seeking per thumbnail',
+    strip.startsWith("select='") && strip.includes('prev_selected_t'), strip);
+  check('SDR thumbnails skip the tone-map', !strip.includes('tonemap'), strip);
+
+  const stripHdr = buildFilmstripFilters({ isHDR: true, height: 64, step: 3.6 });
   check('HDR thumbnails are tone-mapped so the strip matches the player',
-    buildThumbFilters({ isHDR: true, height: 64 }).includes('tonemap'));
+    stripHdr.includes('tonemap'));
+  check('thumbnails scale BEFORE tone-mapping — twice as fast, same at 64px',
+    stripHdr.indexOf('scale=-2:64') < stripHdr.indexOf('tonemap'), stripHdr);
+  check('the select expression is quoted so its commas are not filter separators',
+    /^select='[^']*'/.test(strip), strip);
 }
 
 console.log('\nManual rotation');
@@ -189,7 +198,7 @@ console.log('\nManual rotation');
     hdrChain.indexOf('crop=') < hdrChain.indexOf('tonemap'), hdrChain);
 
   check('rotated thumbnails carry the same rotation as the render',
-    buildThumbFilters({ isHDR: false, height: 64, rotation: 90 }).startsWith('transpose=1'));
+    buildFilmstripFilters({ isHDR: false, height: 64, rotation: 90, step: 3.6 }).includes('transpose=1'));
 
   // "Original" must follow the rotated frame, not the file's own orientation.
   const rotated = viewSize(media, 90);
@@ -197,6 +206,46 @@ console.log('\nManual rotation');
     Math.abs(ratioFor('original', rotated) - 1920 / 1080) < 0.001,
     String(ratioFor('original', rotated)));
 }
+
+console.log('\nFilmstrip pass');
+{
+  const args = buildFilmstripArgs({
+    srcPath: 'in.mp4', outPattern: 'out/t%04d.jpg',
+    duration: 120, count: 30, height: 64, isHDR: false, rotation: 0,
+  });
+  check('decodes keyframes only — the whole reason it is fast',
+    args.includes('-skip_frame') && args[args.indexOf('-skip_frame') + 1] === 'nokey');
+  check('uses hardware decode where available', args.includes('-hwaccel'));
+  check('skips audio entirely', args.includes('-an'));
+  check('reports progress so the overlay can be determinate',
+    args.join(' ').includes('-progress pipe:1'));
+  check('is ONE pass writing a numbered sequence, not N processes',
+    args[args.length - 1] === 'out/t%04d.jpg');
+  const vf = args[args.indexOf('-vf') + 1];
+  check('step is duration / count', vf.includes('4.0000'), vf);
+}
+
+
+console.log('\nRemembered folder');
+{
+  // A fake filesystem so the policy can be checked without touching disk.
+  const present = new Set(['C:\\clips', 'C:\\Users\\me\\Desktop', 'C:\\Users\\me']);
+  const exists = (p) => present.has(p);
+  const D = 'C:\\Users\\me\\Desktop';
+  const H = 'C:\\Users\\me';
+
+  check('reuses the folder the last video came from',
+    pickStartFolder('C:\\clips', D, H, exists) === 'C:\\clips');
+  check('falls back to the Desktop when the remembered folder is gone',
+    pickStartFolder('E:\\unplugged-sd-card\\DCIM', D, H, exists) === D);
+  check('falls back to the Desktop on a first run, with nothing remembered',
+    pickStartFolder(undefined, D, H, exists) === D);
+  check('falls back to home if there is no Desktop either',
+    pickStartFolder('E:\\gone', 'C:\\Users\\me\\NoDesktop', H, exists) === H);
+  check('an empty remembered value is not treated as a folder',
+    pickStartFolder('', D, H, exists) === D);
+}
+
 
 console.log('\nQuality presets');
 {

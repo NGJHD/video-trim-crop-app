@@ -55,16 +55,58 @@ export function buildRenderFilters({ crop, isHDR, rotation = 0 }) {
 }
 
 /**
- * Filmstrip thumbnails match the player: same rotation, and tone-mapped for HDR
- * so the strip doesn't sit next to the video looking washed out.
+ * Filmstrip filter chain.
+ *
+ * Two things make this fast, and they matter more than they look:
+ *
+ * 1. `select` picks one frame roughly every `step` seconds, so a single pass
+ *    over the file yields the whole strip. The old approach spawned one ffmpeg
+ *    per thumbnail, which re-opened and re-demuxed the file N times.
+ * 2. It runs alongside `-skip_frame nokey`, so the decoder only reconstructs
+ *    keyframes and skips everything between them.
+ *
+ * Scale comes BEFORE the tone-map here — the opposite of the render chain.
+ * Tone-mapping 64px thumbnails instead of full frames is about twice as fast
+ * and visually identical at this size, whereas the render needs the accuracy.
+ *
+ * The single quotes around the select expression are deliberate: the commas
+ * inside `gte(...)` would otherwise be read as filter separators.
  */
-export function buildThumbFilters({ isHDR, height, rotation = 0 }) {
-  const parts = [];
+export function buildFilmstripFilters({ isHDR, height, rotation = 0, step }) {
+  const parts = [
+    `select='isnan(prev_selected_t)+gte(t-prev_selected_t,${step.toFixed(4)})'`,
+  ];
   const rot = rotateFilter(rotation);
   if (rot) parts.push(rot);
-  if (isHDR) parts.push(TONEMAP);
   parts.push(`scale=-2:${height}`);
+  if (isHDR) parts.push(TONEMAP);
   return parts.join(',');
+}
+
+/**
+ * Full argument array for one filmstrip pass.
+ *
+ * `-skip_frame nokey` is the big win: it tells the decoder to throw away
+ * non-keyframes before reconstructing them. Thumbnails then land on keyframe
+ * boundaries rather than exact times, which is invisible in a filmstrip — phone
+ * video keyframes are about a second apart — and the strip is a navigation aid,
+ * not the source of any timing. Trim and playhead positions come from the
+ * track geometry, never from thumbnails.
+ */
+export function buildFilmstripArgs({ srcPath, outPattern, duration, count, height, isHDR, rotation }) {
+  const step = Math.max(0.05, duration / Math.max(1, count));
+  return [
+    '-y', '-v', 'error',
+    '-hwaccel', 'auto',
+    '-skip_frame', 'nokey',
+    '-an',
+    '-i', srcPath,
+    '-fps_mode', 'passthrough',
+    '-vf', buildFilmstripFilters({ isHDR, height, rotation, step }),
+    '-q:v', '4',
+    '-progress', 'pipe:1', '-nostats',
+    outPattern,
+  ];
 }
 
 /**

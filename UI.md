@@ -365,7 +365,7 @@ rotation rebuild takes several seconds on a long clip, and without this there is
 no sign anything is happening. A cache hit finishes in milliseconds and the
 scrim never meaningfully appears, which is correct — nothing was rebuilt.
 
-**Filmstrip generation.** One extra ffmpeg pass after the source is playable,
+**Filmstrip generation.** A single ffmpeg pass after the source is playable,
 reading the proxy when there is one and the original otherwise (preview only —
 never an input to the render). It writes N JPEG tiles into the temp directory,
 where N is derived from the track's pixel width, and emits progress on the same

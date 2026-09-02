@@ -4,6 +4,7 @@ import fs from 'fs';
 import { assertBinaries, iconPathIfPresent } from './binaries.js';
 import { probeMedia } from './probe.js';
 import { sweepTemp, suggestOutputPath } from './temp.js';
+import { rememberFolder, startFolder } from './settings.js';
 import { remuxProxy, transcodeProxy, buildFilmstrip, renderOutput } from './media.js';
 import { cancelJob, cancelAllJobs, newJobId } from './jobs.js';
 import { CH, STAGE } from '../shared/ipc.js';
@@ -81,7 +82,14 @@ function handle(channel, fn) {
 }
 
 function registerHandlers() {
-  handle(CH.MEDIA_PROBE, (_e, filePath) => probeMedia(filePath));
+  handle(CH.MEDIA_PROBE, async (_e, filePath) => {
+    const info = await probeMedia(filePath);
+    // Every successful load passes through here, however the file arrived —
+    // a drop, the dialog, or the command line — so this is the one place that
+    // needs to remember where it came from.
+    rememberFolder(path.dirname(filePath));
+    return info;
+  });
 
   handle(CH.MEDIA_PROXY, async (event, { srcPath, duration, mode }) => {
     const sender = event.sender;
@@ -91,21 +99,11 @@ function registerHandlers() {
   });
 
   handle(CH.MEDIA_FILMSTRIP, async (event, opts) => {
-    const jobId = opts.jobId || newJobId();
-    const sender = event.sender;
+    // One ffmpeg pass now, so it reports its own progress on job:progress.
     const files = await buildFilmstrip({
       ...opts,
-      jobId,
-      sender,
-      onProgress: (fraction) => {
-        if (!sender.isDestroyed()) {
-          sender.send(CH.JOB_PROGRESS, {
-            jobId,
-            stage: STAGE.FILMSTRIP,
-            percent: fraction * 100,
-          });
-        }
-      },
+      jobId: opts.jobId || newJobId(),
+      sender: event.sender,
     });
     return { files };
   });
@@ -145,6 +143,7 @@ function registerHandlers() {
   handle(CH.FILE_CHOOSE, async () => {
     const res = await dialog.showOpenDialog(mainWindow, {
       title: 'Choose a video',
+      defaultPath: startFolder(),
       properties: ['openFile'],
       filters: [
         { name: 'Video', extensions: ['mp4', 'mov', 'mkv', 'avi', 'webm', 'ts', 'm4v', 'mts', 'm2ts', 'flv', 'wmv'] },
