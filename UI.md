@@ -323,9 +323,19 @@ same span as left-to-right — and ends with the playhead on the new trim start,
 ready to review what was just selected.
 
 **The playhead has its own handle:** a small white square sitting just above the
-strip, joined to the playhead line by a short stem so it reads as the head of
-that line rather than a floating chip. The gap stays between the *box* and the
-filmstrip; the line crosses it.
+strip, with the line running from it down through the track so it reads as the
+head of that line rather than a floating chip. The gap stays between the *box*
+and the filmstrip; the line crosses it.
+
+Box and line are **one positioned element** spanning both the handle strip and
+the track, so they share a single `left` and are the same 1px column by
+construction — there is nothing to keep in sync. They were two elements in
+different parents at first, and drifted: the track carried a 1px `border`, which
+shrinks the padding box that `left: %` resolves against, while `timeAt()` reads
+the border box. The playhead sat up to 1px off at the ends and *exactly on at
+the midpoint*, which is a good way to miss a bug. The track now draws its
+hairline with an inset box-shadow, which costs no layout, and the trim handles
+line up with the click positions that set them for the same reason.
 
 - Dragging the handle **scrubs and only scrubs** — it never edits the trim. That
   is why scrubbing didn't have to fight drag-to-select for the track: each

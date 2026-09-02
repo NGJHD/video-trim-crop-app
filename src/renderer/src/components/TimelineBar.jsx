@@ -220,47 +220,25 @@ export default function TimelineBar({ videoRef }) {
         </label>
       </div>
 
-      {/* Filmstrip track, with the playhead handle riding above it */}
+      {/* Filmstrip track, with the playhead handle riding above it.
+          The playhead lives in THIS wrapper rather than inside the track, so
+          the box and the line are one element positioned once — they cannot
+          drift apart. */}
       <div className="min-w-0 flex-1">
-        {/* A grab handle for the playhead. The track is busy with three other
-            gestures, so scrubbing gets its own target rather than competing
-            with drag-to-select. The gap keeps it from looking welded to the
-            filmstrip. */}
-        <div className="relative h-3.5">
-          {ready && (
-            <div
-              className="absolute bottom-[3px] h-2.5 w-2.5 -translate-x-1/2 cursor-pointer
-                         rounded-[2px] border border-neutral-900 bg-white shadow-sm"
-              style={{ left: `${pct(currentTime)}%` }}
-              title="Drag to scrub · right-click to set a trim point here"
-              onPointerDown={(e) => {
-                if (!ready || e.button !== 0) return;
-                // Stops the press reaching the window listener that dismisses
-                // the menu, so close it here instead.
-                e.stopPropagation();
-                setMenu(null);
-                setDrag('playhead');
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                // Acts on the playhead position, not on where the cursor is.
-                setMenu({ x: e.clientX, y: e.clientY, time: currentTime });
-              }}
-            >
-              {/* Stem bridging the gap down to the track, so the box reads as
-                  the head of the playhead line rather than a floating chip.
-                  The gap stays between the BOX and the filmstrip; the line
-                  crosses it. */}
-              <span className="pointer-events-none absolute left-1/2 top-full h-[3px] w-px
-                               -translate-x-1/2 bg-white" />
-            </div>
-          )}
-        </div>
+        <div className="relative">
+          {/* Room for the handle box above the strip. */}
+          <div className="h-3.5" />
 
         <div
           ref={trackRef}
-          className="relative h-16 w-full overflow-hidden rounded border border-neutral-800 bg-neutral-950"
+          /* An INSET SHADOW, not a border. A real border shrinks the padding
+             box by 2px, so `left: %` inside the track resolved to a different
+             place than the same % outside it, and than timeAt() which reads
+             the border box — the playhead sat up to 1px off at the ends and
+             exactly on at the middle. An inset shadow paints the same hairline
+             without touching layout. */
+          className="relative h-16 w-full overflow-hidden rounded bg-neutral-950
+                     shadow-[inset_0_0_0_1px_#2f2f2f]"
           onPointerDown={(e) => {
             if (!ready || e.button !== 0) return;
             // Seek straight away so a click feels immediate. If this turns out
@@ -331,15 +309,47 @@ export default function TimelineBar({ videoRef }) {
                 <div className="mx-auto h-full w-[3px] bg-amber-400" />
               </div>
 
-              {/* Playhead. Centred on the position, not left-aligned to it, so
-                  it lines up with the handle box above — which is centred too. */}
-              <div
-                className="pointer-events-none absolute inset-y-0 z-10 w-px -translate-x-1/2 bg-white
-                           shadow-[0_0_4px_rgba(0,0,0,0.9)]"
-                style={{ left: `${pct(currentTime)}%` }}
-              />
             </>
           )}
+        </div>
+
+        {/* The playhead: box and line as ONE positioned element spanning the
+            handle strip and the track. Because there is a single `left`, the
+            box, the stem and the line are the same 1px column by construction
+            — nothing to keep in sync, nothing to drift. */}
+        {ready && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-30"
+            style={{ left: `${pct(currentTime)}%` }}
+          >
+            {/* One continuous hairline from just under the box to the bottom of
+                the track, crossing the gap so the box reads as its head. */}
+            <div
+              className="absolute bottom-0 w-px -translate-x-1/2 bg-white
+                         shadow-[0_0_4px_rgba(0,0,0,0.9)]"
+              style={{ top: 10 }}
+            />
+            <div
+              className="pointer-events-auto absolute top-0 h-2.5 w-2.5 -translate-x-1/2
+                         cursor-pointer rounded-[2px] bg-white shadow-sm"
+              title="Drag to scrub · right-click to set a trim point here"
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                // Stops the press reaching the window listener that dismisses
+                // the menu, so close it here instead.
+                e.stopPropagation();
+                setMenu(null);
+                setDrag('playhead');
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Acts on the playhead position, not on where the cursor is.
+                setMenu({ x: e.clientX, y: e.clientY, time: currentTime });
+              }}
+            />
+          </div>
+        )}
         </div>
 
         {/* Right-click menu: set either trim point at the clicked frame, which
