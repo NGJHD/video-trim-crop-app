@@ -15,6 +15,12 @@ extraResources:
   # exe's own embedded icon (win.icon below) covers Explorer and the taskbar.
   - from: build/icon.ico
     to: icon.ico
+# Licence notices sit next to the exe in the unzipped folder, so the thing
+# people actually receive carries them — the bundled FFmpeg is GPL and requires
+# it. See THIRD-PARTY-NOTICES.md.
+extraFiles:
+  - LICENSE
+  - THIRD-PARTY-NOTICES.md
 # Files inside an asar archive cannot be executed, and this only breaks after
 # packaging — so the FFmpeg binaries are kept out of it.
 asarUnpack:

@@ -229,7 +229,7 @@ export default function TimelineBar({ videoRef }) {
         <div className="relative h-3.5">
           {ready && (
             <div
-              className="absolute bottom-[3px] h-2.5 w-2.5 -translate-x-1/2 cursor-ew-resize
+              className="absolute bottom-[3px] h-2.5 w-2.5 -translate-x-1/2 cursor-pointer
                          rounded-[2px] border border-neutral-900 bg-white shadow-sm"
               style={{ left: `${pct(currentTime)}%` }}
               title="Drag to scrub · right-click to set a trim point here"
@@ -331,9 +331,10 @@ export default function TimelineBar({ videoRef }) {
                 <div className="mx-auto h-full w-[3px] bg-amber-400" />
               </div>
 
-              {/* Playhead */}
+              {/* Playhead. Centred on the position, not left-aligned to it, so
+                  it lines up with the handle box above — which is centred too. */}
               <div
-                className="pointer-events-none absolute inset-y-0 z-10 w-px bg-white
+                className="pointer-events-none absolute inset-y-0 z-10 w-px -translate-x-1/2 bg-white
                            shadow-[0_0_4px_rgba(0,0,0,0.9)]"
                 style={{ left: `${pct(currentTime)}%` }}
               />

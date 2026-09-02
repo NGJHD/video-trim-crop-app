@@ -454,9 +454,22 @@ Windows user paths frequently do.
 
 ## 10. Licensing note
 
-A static FFmpeg build with x264 is GPL-licensed. That is fine for personal
-use. If this app is ever distributed publicly, the GPL obligations apply to
-the distributed bundle. Flag this rather than silently working around it.
+A static FFmpeg build with x264 is GPL-licensed — GPL **v3** for the build in
+use, because it is configured `--enable-gpl --enable-version3`.
+
+The project's own source is **MIT**. That combination holds because the app
+**spawns `ffmpeg.exe` as a separate process** and never links FFmpeg's
+libraries. Do not change that: linking libavcodec directly would pull this
+codebase into the GPL.
+
+The binaries are not in git and **cannot** be — ~140 MB each against GitHub's
+100 MB per-file hard limit. `npm run fetch-ffmpeg` downloads and validates
+them, so a source clone is one command away from working. The released zip
+contains them, so end users are unaffected.
+
+Obligations attach to the **distributed zip**, not to this repository. They are
+written out in `THIRD-PARTY-NOTICES.md`, which ships inside the zip alongside
+`LICENSE`. Flag licensing questions rather than silently working around them.
 
 ---
 

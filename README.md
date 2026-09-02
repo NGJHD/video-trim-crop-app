@@ -67,6 +67,7 @@ overwrites: a second render becomes `_trimmed_1`, `_trimmed_2`, and so on.
 ```bash
 npm install
 node node_modules/electron/install.js   # see note below
+npm run fetch-ffmpeg                    # downloads the bundled binaries
 npm run dev
 ```
 
@@ -86,9 +87,22 @@ npx electron . "C:\path\to\clip.mp4"
 
 ### FFmpeg binaries
 
-`resources/bin/ffmpeg.exe` and `resources/bin/ffprobe.exe` must be present.
-They are **git-ignored** (~440 MB) so a fresh clone needs them copied in — any
-recent GPL full build works; the app is developed against Gyan 9.0.
+**Users never deal with this** — the released zip already contains FFmpeg. It
+only matters when building from source.
+
+`resources/bin/ffmpeg.exe` and `ffprobe.exe` are **not in git**, and can't be:
+they are ~140 MB each and GitHub hard-rejects any file over 100 MB. One command
+fetches them:
+
+```bash
+npm run fetch-ffmpeg
+```
+
+That downloads a static win64 **GPL** build (x264 is required by the render
+spec), checks it actually provides `libx264`, `zscale`, `tonemap` and `aac` —
+a build without `zscale` would break HDR output in a way that's easy to miss —
+and only then moves it into `resources/bin/`. Any recent GPL full build works
+if you'd rather supply your own.
 
 They are never resolved from the system `PATH`, and the app refuses to start
 with a clear message if they're missing.
@@ -172,8 +186,9 @@ src/
                temp.js      temp lifecycle, output path selection
   preload/     index.js     the entire window.api surface
   renderer/    src/App.jsx, store.js, components/, lib/
-scripts/       verify.mjs      55 checks, incl. real-footage rotation tests
-               make-icon.mjs   build/icon.png -> multi-size build/icon.ico
+scripts/       verify.mjs        55 checks, incl. real-footage rotation tests
+               make-icon.mjs     build/icon.png -> multi-size build/icon.ico
+               fetch-ffmpeg.mjs  downloads + validates the bundled binaries
 build/         icon.png, icon.ico
 ```
 
@@ -184,6 +199,13 @@ goes through IPC. `contextIsolation` is on, `nodeIntegration` off.
 
 ## Licensing
 
-The bundled FFmpeg is a **GPL** build (x264 enabled). That is fine for personal
-use. If this app is ever distributed publicly, the GPL obligations apply to the
-distributed bundle — see CLAUDE.md §10.
+This project's source is **MIT** (`LICENSE`).
+
+The distributed app also bundles **FFmpeg, which is GPL v3** and is not covered
+by the MIT licence. The app spawns `ffmpeg.exe` as a separate process rather
+than linking it, which is why this codebase can stay MIT while the binaries
+keep their own licence.
+
+If you distribute the zip, there are obligations — keeping the notices in the
+folder and pointing at the FFmpeg source. They're short and spelled out in
+**[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)**.
