@@ -1,6 +1,7 @@
 import { useStore } from '../store.js';
 import { ASPECTS, isFullFrame } from '../lib/crop.js';
 import { ROTATIONS } from '@shared/ipc.js';
+import InfoIcon from './InfoIcon.jsx';
 
 function Radio({ label, active, disabled, onClick, title }) {
   return (
@@ -38,7 +39,7 @@ function Heading({ children }) {
  * The left rail: aspect mode, reset, and manual rotation. No coordinate
  * readouts — the rectangle on the video already says where the crop is.
  */
-export default function CropRail() {
+export default function CropRail({ onAbout }) {
   const aspect = useStore((s) => s.aspect);
   const setAspect = useStore((s) => s.setAspect);
   const resetCrop = useStore((s) => s.resetCrop);
@@ -118,6 +119,27 @@ export default function CropRail() {
           title={trimIsFull ? 'Already the full clip' : 'Select the whole clip again'}
         >
           Reset trim
+        </button>
+      </div>
+
+      {/* Pinned to the bottom of the rail. mt-auto rather than a fixed
+          position, so it sits under the last section however tall they get and
+          scrolls with them on a short window.
+
+          Styled as a button, not a text link: as plain text it read as a label
+          and nobody tried clicking it. The icon keeps it distinct from the two
+          reset buttons above, which are a different kind of thing. */}
+      <div className="mt-auto pt-6">
+        <button
+          type="button"
+          onClick={onAbout}
+          className="flex w-full items-center justify-center gap-1.5 rounded border
+                     border-neutral-700 px-2 py-1.5 text-[13px] text-neutral-300
+                     transition-colors hover:border-neutral-600 hover:bg-neutral-800"
+          title="Version, source and updates"
+        >
+          <InfoIcon />
+          About
         </button>
       </div>
     </aside>

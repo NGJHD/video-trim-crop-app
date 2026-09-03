@@ -20,6 +20,13 @@ const api = {
   reveal: (filePath) => ipcRenderer.invoke(CH.FILE_REVEAL, filePath),
   setTitle: (title) => ipcRenderer.invoke(CH.WINDOW_TITLE, title),
 
+  about: () => ipcRenderer.invoke(CH.UPDATE_ABOUT),
+  checkUpdate: () => ipcRenderer.invoke(CH.UPDATE_CHECK),
+  installUpdate: (release) => ipcRenderer.invoke(CH.UPDATE_INSTALL, release),
+  cancelUpdate: () => ipcRenderer.invoke(CH.UPDATE_CANCEL),
+  // Only ever the app's own GitHub pages — the main process re-checks that.
+  openLink: (url) => ipcRenderer.invoke(CH.UPDATE_OPEN_LINK, url),
+
   /**
    * Chromium no longer exposes File.path, so the absolute path of a dropped
    * file has to come from webUtils in the preload.
@@ -36,6 +43,12 @@ const api = {
     const fn = (_e, payload) => cb(payload);
     ipcRenderer.on(CH.JOB_PROGRESS, fn);
     return () => ipcRenderer.removeListener(CH.JOB_PROGRESS, fn);
+  },
+
+  onUpdateProgress: (cb) => {
+    const fn = (_e, payload) => cb(payload);
+    ipcRenderer.on(CH.UPDATE_PROGRESS, fn);
+    return () => ipcRenderer.removeListener(CH.UPDATE_PROGRESS, fn);
   },
 };
 

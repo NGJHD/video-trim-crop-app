@@ -495,6 +495,91 @@ accumulate state a user can't see or reset by deleting one file.
 
 ---
 
+## 9.2 About, and updating itself
+
+`About` in the bottom-left corner opens a modal showing the author, the version,
+a link to the repo, and a **Check for updates** button that pulls the newest
+release zip from GitHub and replaces the app with it.
+
+Because the app ships as a zip of a folder, "replace itself" means replacing a
+folder. A running exe cannot overwrite itself, so the app writes a `.cmd`,
+launches it, and quits; the script waits for the exe to unlock, `robocopy`s the
+new files over the install folder, and starts the app again.
+
+**Nothing here can be tested in a dev run.** Both bugs found while building it
+only appear in a packaged build, and each cost a full build cycle. Test the way
+§9.3 describes, not by clicking around `npm run dev`.
+
+Two that will bite again if the code is rewritten:
+
+- **`spawn()` will not launch a `.cmd`.** Since the CVE-2024-27980 fix, Node
+  refuses a `.bat`/`.cmd` as the executable and answers `EINVAL` — at the very
+  last step, after the whole download. Go through `cmd.exe /c <script>`, with
+  the path as its own argv entry. Never `shell: true` with an interpolated
+  path; that is the vulnerability the fix exists for.
+- **Do not wait with `tasklist | find`.** It works interactively and *hangs*
+  when launched detached from a dying parent: `find.exe` sits forever on its
+  end of the pipe, the copy never runs, and a stray console is left on the
+  desktop. Wait on the exe's **file lock** instead — that is the real
+  precondition anyway, and it needs no pipe.
+
+The rest of the rules that hold here:
+
+- **Never automatic.** Nothing checks on launch and nothing nags. The user
+  presses a button. This app is often mid-render.
+- **The install must be refused in a dev run.** `app.isPackaged` is false there
+  and the exe is `node_modules/electron/dist/electron.exe`. Checking still works.
+- **Anything with an effect lives in the main process.** The dialog is a status
+  readout over five IPC channels; the renderer has no network and no fs, exactly
+  as it has no FFmpeg.
+- **`update:open-link` only opens this repo's own pages.** The main process
+  re-checks the URL prefix. Do not widen it into a general `openExternal`.
+- **Version comparison is pure and tested** — `src/shared/version.js`, exercised
+  by `npm run verify`, in the same spirit as `shared/folder.js`. `"1.10.0"` is
+  newer than `"1.9.0"` only if you parse it; an unparseable tag must answer
+  *not newer*.
+- **Identity lives in `src/shared/about.js`.** Name, author, `owner/repo`, and
+  the asset suffix — which must stay in step with `artifactName` in
+  `electron-builder.yml`. `npm run verify` checks that they have not drifted.
+- The version itself is **not** in that file. It comes from `app.getVersion()`,
+  which reads the packaged `package.json`. Two places to bump is one too many.
+
+---
+
+## 9.3 What a release must look like, and how to test an update
+
+The updater is only as good as the release it reads:
+
+| | |
+| --- | --- |
+| **Tag** | `v<version>`, matching `package.json` exactly — `v1.1.0` for `1.1.0`. |
+| **Asset** | Exactly one `.zip`, attached. Nothing else is looked at. |
+| **Publish** | A real published release. `/releases/latest` skips drafts and pre-releases. |
+
+The download is verified against the tag before anything is replaced — the
+version is read straight out of the new `resources/app.asar` — so a mismatch is
+a failed update rather than a silent downgrade loop.
+
+**Testing it means packaging a build that claims to be older and letting it
+update itself for real.** There is no shortcut:
+
+1. Set `version` to something below the published release, e.g. `0.9.0`.
+2. `npm run pack` (no zip needed — `--dir` is much faster).
+3. Copy `release/win-unpacked` to a scratch folder, so nothing real is at risk.
+4. Run the exe there, About → Check → Update.
+5. Confirm: the bar moves and shows bytes; the app closes and comes back on its
+   own; the exe's `ProductVersion` is now the release version; `update.log` in
+   the install folder says `update applied`; and `%TEMP%` has no
+   `vtc-update-*` **folder** left (the `.cmd` is expected — it cannot delete
+   itself, and is swept on the next check).
+6. Delete the scratch folder and restore the real version.
+
+Also worth exercising once each: already-latest, network off, cancel
+mid-download, and a read-only install folder (must be refused **before** the
+download).
+
+---
+
 ## 10. Licensing note
 
 A static FFmpeg build with x264 is GPL-licensed — GPL **v3** for the build in
@@ -539,3 +624,8 @@ written out in `THIRD-PARTY-NOTICES.md`, which ships inside the zip alongside
 - Changing the High preset, or defaulting to anything below it. The three
   presets in §7.2 exist because the fixed default was proven correct first;
   High remains the default and the reference.
+- Checking for updates on launch, or applying one without being asked (§9.2).
+- Comparing version strings lexically, or offering an update from a tag that
+  did not parse.
+- Adding `electron-updater`. It wants an installer target, a `latest.yml` and
+  code signing; this app ships a plain zip on purpose.

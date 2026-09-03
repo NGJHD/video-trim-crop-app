@@ -65,6 +65,10 @@ overwrites: a second render becomes `_trimmed_1`, `_trimmed_2`, and so on.
 - Output is H.264 / AAC in MP4 with `+faststart`.
 - **It remembers the folder** your last video came from and opens the file
   dialog there. If that folder has since gone, it falls back to your Desktop.
+- **About, bottom-left**, shows the version and has a **Check for updates**
+  button. If a newer release exists on GitHub the app downloads it, closes,
+  replaces itself and starts again — no reinstalling, no manual unzipping.
+  Nothing checks on launch and nothing nags; it only happens when you ask.
 
 ---
 
@@ -134,8 +138,9 @@ script after replacing `icon.png`.
 npm run verify
 ```
 
-69 checks covering crop geometry, letterbox mapping, rotation, quality presets,
-filter-chain construction and FFmpeg argument building — then, against real
+82 checks covering crop geometry, letterbox mapping, rotation, quality presets,
+filter-chain construction, FFmpeg argument building and update version
+comparison — then, against real
 footage, which it looks for in `./samples`, then `$VTC_SAMPLES`, then a
 directory passed as an argument:
 
@@ -185,6 +190,8 @@ src/
   shared/      ipc.js       channel names + payload shapes, imported by both sides
                filters.js   FFmpeg filter chains and argument arrays
                folder.js    where the open dialog starts
+               about.js     app identity: name, author, owner/repo, asset suffix
+               version.js   version parsing/comparison + release asset picking
   main/        index.js     app lifecycle, window, IPC handlers
                binaries.js  bundled binary resolution + startup assertion
                probe.js     ffprobe -> MediaInfo (the ONLY place raw w/h is read)
@@ -192,9 +199,10 @@ src/
                jobs.js      child process registry, progress parsing, cancellation
                temp.js      temp lifecycle, output path selection
                settings.js  the one persisted value: last used folder
+               updater.js   check GitHub, download, verify, replace, restart
   preload/     index.js     the entire window.api surface
   renderer/    src/App.jsx, store.js, components/, lib/
-scripts/       verify.mjs        69 checks, incl. real-footage rotation tests
+scripts/       verify.mjs        82 checks, incl. real-footage rotation tests
                make-icon.mjs     build/icon.png -> multi-size build/icon.ico
                fetch-ffmpeg.mjs  downloads + validates the bundled binaries
 build/         icon.png, icon.ico

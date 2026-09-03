@@ -5,10 +5,12 @@ import Stage from './components/Stage.jsx';
 import TimelineBar from './components/TimelineBar.jsx';
 import OutputBar from './components/OutputBar.jsx';
 import DropZone from './components/DropZone.jsx';
+import AboutDialog from './components/AboutDialog.jsx';
 
 export default function App() {
   const videoRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const phase = useStore((s) => s.phase);
   const media = useStore((s) => s.media);
@@ -65,6 +67,9 @@ export default function App() {
       const s = useStore.getState();
       const el = videoRef.current;
       const typing = ['INPUT', 'TEXTAREA'].includes(e.target?.tagName);
+
+      // The About dialog is modal: nothing behind it should be listening.
+      if (aboutOpen) return;
 
       if (e.ctrlKey && e.key.toLowerCase() === 'o') {
         e.preventDefault();
@@ -127,7 +132,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [openDialog]);
+  }, [openDialog, aboutOpen]);
 
   return (
     <div
@@ -137,12 +142,16 @@ export default function App() {
       }
     >
       <div className="flex min-h-0 flex-1">
-        {media && <CropRail />}
-        {media ? <Stage videoRef={videoRef} /> : <DropZone onChoose={openDialog} />}
+        {media && <CropRail onAbout={() => setAboutOpen(true)} />}
+        {media
+          ? <Stage videoRef={videoRef} />
+          : <DropZone onChoose={openDialog} onAbout={() => setAboutOpen(true)} />}
       </div>
 
       {media && <TimelineBar videoRef={videoRef} />}
       <OutputBar />
+
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </div>
   );
 }

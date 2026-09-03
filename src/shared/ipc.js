@@ -18,10 +18,18 @@ export const CH = {
   FILE_REVEAL: 'file:reveal',
   WINDOW_TITLE: 'window:title',
 
+  // About / self-update
+  UPDATE_ABOUT: 'update:about',
+  UPDATE_CHECK: 'update:check',
+  UPDATE_INSTALL: 'update:install',
+  UPDATE_CANCEL: 'update:cancel',
+  UPDATE_OPEN_LINK: 'update:open-link',
+
   // main -> renderer (send)
   JOB_PROGRESS: 'job:progress',
   JOB_DONE: 'job:done',
   JOB_ERROR: 'job:error',
+  UPDATE_PROGRESS: 'update:progress',
 };
 
 /** Stages a job can report, used for progress copy. */

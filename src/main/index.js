@@ -7,7 +7,12 @@ import { sweepTemp, suggestOutputPath } from './temp.js';
 import { rememberFolder, startFolder } from './settings.js';
 import { remuxProxy, transcodeProxy, buildFilmstrip, renderOutput } from './media.js';
 import { cancelJob, cancelAllJobs, newJobId } from './jobs.js';
+import {
+  aboutInfo, checkForUpdate, cancelUpdate, downloadAndStage,
+  isInstallFolderWritable, launchUpdaterAndQuit,
+} from './updater.js';
 import { CH, STAGE } from '../shared/ipc.js';
+import { repoUrl } from '../shared/about.js';
 
 let mainWindow = null;
 
@@ -162,6 +167,52 @@ function registerHandlers() {
 
   handle(CH.WINDOW_TITLE, (_e, title) => {
     mainWindow?.setTitle(title || 'Video Trim & Crop');
+    return true;
+  });
+
+  handle(CH.UPDATE_ABOUT, () => aboutInfo());
+
+  handle(CH.UPDATE_CHECK, () => checkForUpdate());
+
+  handle(CH.UPDATE_INSTALL, async (event, release) => {
+    // A dev run's exe is node_modules/electron/dist/electron.exe. Replacing
+    // that would be nonsense, so refuse rather than quietly do damage.
+    if (!app.isPackaged) {
+      throw new Error('This is a development build — install the update from the GitHub release instead.');
+    }
+    if (!isInstallFolderWritable()) {
+      throw new Error(
+        `The app cannot write to its own folder:\n\n${path.dirname(process.execPath)}\n\n` +
+          'Nothing has been changed. Move the folder somewhere writable, or download the ' +
+          'new version from GitHub by hand.'
+      );
+    }
+
+    const ready = await downloadAndStage(release, (payload) => {
+      if (!event.sender.isDestroyed()) event.sender.send(CH.UPDATE_PROGRESS, payload);
+    });
+
+    // No ffmpeg may be mid-write when the folder is replaced under it.
+    cancelAllJobs();
+    sweepTemp();
+
+    launchUpdaterAndQuit(ready);
+
+    // The script is waiting on this process to exit before it can touch a file.
+    // Give the reply a tick to reach the renderer first.
+    setTimeout(() => app.quit(), 150);
+    return true;
+  });
+
+  handle(CH.UPDATE_CANCEL, () => cancelUpdate());
+
+  handle(CH.UPDATE_OPEN_LINK, async (_e, url) => {
+    // The renderer may only send people to this app's own GitHub pages. A
+    // general-purpose openExternal is a hole worth not opening.
+    if (typeof url !== 'string' || !url.startsWith(repoUrl)) {
+      throw new Error('Refusing to open a link outside the project repository.');
+    }
+    await shell.openExternal(url);
     return true;
   });
 }

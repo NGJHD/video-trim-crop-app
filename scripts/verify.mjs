@@ -22,6 +22,8 @@ import { fileURLToPath } from 'node:url';
 import { buildRenderArgs, buildRenderFilters, buildFilmstripFilters, buildFilmstripArgs, rotateFilter } from '../src/shared/filters.js';
 import { QUALITY } from '../src/shared/ipc.js';
 import { pickStartFolder } from '../src/shared/folder.js';
+import { parseVersion, compareVersions, isNewer, pickReleaseAsset } from '../src/shared/version.js';
+import { ABOUT } from '../src/shared/about.js';
 import {
   normalizeCrop, fitRatio, renderedVideoRect, toSource, toScreen,
   fullFrameCrop, viewSize, ratioFor, MIN_CROP,
@@ -294,6 +296,54 @@ console.log('\nRender arguments');
   check('source with no audio gets no audio flags at all',
     (() => { const a = buildRenderArgs({ ...base, hasAudio: false, removeAudio: false });
       return !a.includes('-an') && !a.includes('aac'); })());
+}
+
+console.log('\nUpdate version handling');
+{
+  // Getting this wrong is not cosmetic: always-newer is a download loop,
+  // always-older means updates never reach anybody.
+  check('parses a v-prefixed tag', JSON.stringify(parseVersion('v1.2.3')) ===
+    JSON.stringify({ major: 1, minor: 2, patch: 3, pre: '' }));
+
+  check('fills in a missing patch', parseVersion('1.2')?.patch === 0);
+
+  check('rejects something that is not a version',
+    parseVersion('latest') === null && parseVersion('') === null && parseVersion(undefined) === null);
+
+  check('1.10.0 is newer than 1.9.0', isNewer('v1.10.0', '1.9.0'),
+    'string comparison would say otherwise');
+
+  check('the same version is not newer', isNewer('v1.0.0', '1.0.0') === false);
+  check('an older tag is not newer', isNewer('v0.9.9', '1.0.0') === false);
+
+  check('a prerelease sorts below its release', compareVersions('1.1.0-beta', '1.1.0') < 0);
+  check('someone on a beta is offered the final', isNewer('v1.1.0', '1.1.0-beta'));
+
+  check('an unparseable tag never offers an update',
+    isNewer('nightly', '1.0.0') === false);
+
+  // Asset picking: the arch suffix wins, a lone zip is accepted, junk is not.
+  const assets = [
+    { name: 'source.tar.gz', browser_download_url: 'x' },
+    { name: 'VideoTrimCrop-1.1.0-arm64.zip', browser_download_url: 'a' },
+    { name: 'VideoTrimCrop-1.1.0-x64.zip', browser_download_url: 'b', size: 10 },
+  ];
+  check('prefers the asset matching this build',
+    pickReleaseAsset(assets, ABOUT.assetSuffix)?.browser_download_url === 'b');
+
+  check('falls back to the only zip in a single-asset release',
+    pickReleaseAsset([{ name: 'App-2.0.0.zip', browser_download_url: 'c' }], ABOUT.assetSuffix)
+      ?.browser_download_url === 'c');
+
+  check('refuses a release with no zip',
+    pickReleaseAsset([{ name: 'notes.txt', browser_download_url: 'd' }], ABOUT.assetSuffix) === null &&
+    pickReleaseAsset(undefined, ABOUT.assetSuffix) === null);
+
+  // The updater builds its download URL from the same suffix the build writes.
+  check('the asset suffix matches what electron-builder produces',
+    fs.readFileSync(path.join(root, 'electron-builder.yml'), 'utf8')
+      .includes(`\${arch}.\${ext}`) && ABOUT.assetSuffix === '-x64.zip',
+    'electron-builder.yml artifactName and ABOUT.assetSuffix have drifted apart');
 }
 
 // ------------------------------------------------------------ real footage

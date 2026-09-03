@@ -219,8 +219,9 @@ and filmstrip failures.
 ## 3. The left rail
 
 Three sections, top to bottom: **Crop** (aspect mode + reset), **Rotate**, and
-**Trim** (reset). Everything that changes the shape or extent of the output and
-isn't a direct manipulation lives here.
+**Trim** (reset), with an **About** link pinned to the bottom. Everything that
+changes the shape or extent of the output and isn't a direct manipulation lives
+here.
 
 | Mode | Behaviour |
 | --- | --- |
@@ -261,6 +262,44 @@ hatch from a direct manipulation, not part of the manipulation itself.
 `Reset crop` when the rectangle is already the whole frame, `Reset trim` when
 the selection already spans the full length. A reset that can't change anything
 shouldn't look like it could.
+
+### 3.3 About
+
+Pinned to the bottom of the rail (`mt-auto`), below Trim: an **About** button,
+carrying the same border and hover as `Reset crop` / `Reset trim`. It is the
+only thing in the rail that isn't about this clip, so it sits apart from the
+sections rather than becoming a fourth one.
+
+It was a plain text link first, and read as a *label* — nobody tried clicking
+it. Anything clickable in this rail wears the same border the resets do.
+
+The ⓘ marks it as a different kind of thing from the two resets. It is an
+**inline SVG, not the character U+24D8**: that glyph isn't in the UI font stack,
+so Windows falls back to Segoe UI Symbol, whose metrics leave the circle sitting
+1.5 px low — `items-center` centres the inline *boxes*, not the ink. Drawn, it
+lands dead centre on every machine. Don't swap it back for a character.
+
+The rail doesn't exist until a video is loaded, so **the empty state carries the
+same button** in the bottom-left corner. One entry point looked fine right up
+until the app had nothing open.
+
+It opens a **modal**: app name, author, version, a link to the repo, and a
+**Check for updates** button.
+
+- The dialog is genuinely modal — the editor's keyboard map is suppressed while
+  it is open, and `Esc` closes the dialog rather than cancelling a job.
+- Checking is one line of status text: *"Version 1.0.0 is the latest."*, or
+  *"Version 1.1.0 is available (248.8 MB)."* with the button turning amber and
+  becoming **Update to 1.1.0**.
+- Installing shows a determinate bar with **bytes, not just a percentage** —
+  "48.2 MB of 248.8 MB" tells you it isn't stuck. Cancel is offered during the
+  download and disappears once unpacking starts, because by then there is
+  nothing left to abort.
+- Every failure is a sentence worth reading — *"GitHub is rate limiting this
+  connection. Try again in an hour."* — with an *Open the releases page instead*
+  fallback underneath.
+- Nothing checks on launch and nothing nags. The mechanism, and what a release
+  has to look like for it to work, are in CLAUDE.md §9.2–9.3.
 
 | Gesture | Result |
 | --- | --- |
@@ -489,7 +528,9 @@ App
 │   ├── PlayButton     play / pause
 │   ├── Timeline       filmstrip track, playhead, in/out handles + timecodes
 │   └── LoopToggle
-└── OutputBar          idle | importing | rendering | done | error
+├── OutputBar          idle | importing | rendering | done | error
+└── AboutDialog        modal: identity, version, repo link, update button
+                       (InfoIcon is shared by CropRail and DropZone)
 ```
 
 One store (`useEditorStore`): `media`, `playback`, `crop`, `trim`, `output`,
